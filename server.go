@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -75,17 +76,20 @@ func (conn Conexao) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func maybeCreateSQLLiteDatabase() (*sql.DB, error) {
-	const create string = `CREATE TABLE IF NOT EXISTS exchange_rates (id INTEGER NOT NULL PRIMARY KEY, codein TEXT NOT NULL,
-							  name TEXT NOT NULL, high TEXT NOT NULL, low TEXT NOT NULL, var_bid TEXT NOT NULL,
-							  pct_change  TEXT NOT NULL, bid TEXT NOT NULL, ask TEXT NOT NULL, timestamp TEXT NOT NULL,
-							  create_date TEXT NOT NULL);`
-
+	dbAlreadyExists := existsDB("exchange_rates.db")
 	db, err := sql.Open("sqlite3", "exchange_rates.db")
 	if err != nil {
 		return nil, err
 	}
-	if _, err := db.Exec(create); err != nil {
-		return nil, err
+
+	if !dbAlreadyExists {
+		const create string = `CREATE TABLE IF NOT EXISTS exchange_rates (id INTEGER NOT NULL PRIMARY KEY, codein TEXT NOT NULL,
+							  name TEXT NOT NULL, high TEXT NOT NULL, low TEXT NOT NULL, var_bid TEXT NOT NULL,
+							  pct_change  TEXT NOT NULL, bid TEXT NOT NULL, ask TEXT NOT NULL, timestamp TEXT NOT NULL,
+							  create_date TEXT NOT NULL);`
+		if _, err := db.Exec(create); err != nil {
+			return nil, err
+		}
 	}
 	log.Println("connected to database exchange_rates.db")
 	return db, nil
@@ -139,6 +143,14 @@ func saveExchangeRatesInfoInDatabase(ctx context.Context, conn Conexao, exchange
 		return err
 	}
 	return nil
+}
+
+func existsDB(fileName string) bool {
+	_, err := os.Stat(fileName)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
 }
 
 //func fileExists(filePath string) (bool, error) {
