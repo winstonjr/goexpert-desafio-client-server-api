@@ -92,7 +92,9 @@ func maybeCreateSQLLiteDatabase() (*sql.DB, error) {
 }
 
 func getExchangeRatesInfo(ctx context.Context) (*Cotacao, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://economia.awesomeapi.com.br/json/last/USD-BRL", nil)
+	ctxInternal, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctxInternal, "GET", "https://economia.awesomeapi.com.br/json/last/USD-BRL", nil)
 	if err != nil {
 		log.Println(err)
 		return nil, err
