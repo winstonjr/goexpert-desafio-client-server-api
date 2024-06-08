@@ -23,13 +23,13 @@ func main() {
 		return
 	}
 
-	extended_exchange := "Dólar: " + exchangeRate.Bid + "\n"
-	err = saveExchangeRatesInfoInFile(extended_exchange)
+	extendedExchange := "Dólar: " + exchangeRate.Bid + "\n"
+	err = saveExchangeRatesInfoInFile(extendedExchange)
 	if err != nil {
 		log.Println(err)
 	}
 
-	io.Copy(os.Stdout, strings.NewReader(extended_exchange))
+	io.Copy(os.Stdout, strings.NewReader(extendedExchange))
 }
 
 func getServerAnswer() (*CotacaoReturnDTO, error) {
