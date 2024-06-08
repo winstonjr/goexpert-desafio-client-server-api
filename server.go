@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"encoding/json"
 	_ "github.com/mattn/go-sqlite3"
 	"io"
 	"log"
@@ -15,48 +17,52 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("GET /cotacao", Cotacao{dbConn: db})
+	mux.Handle("GET /cotacao", Conexao{dbConn: db})
 
 	log.Println("Server initiated at port 8080")
 	http.ListenAndServe(":8080", mux)
 }
 
 type Cotacao struct {
+	Data CotacaoData `json:"USDBRL"`
+}
+
+type CotacaoData struct {
+	Code       string `json:"code"`
+	Codein     string `json:"codein"`
+	Name       string `json:"name"`
+	High       string `json:"high"`
+	Low        string `json:"low"`
+	VarBid     string `json:"varBid"`
+	PctChange  string `json:"pctChange"`
+	Bid        string `json:"bid"`
+	Ask        string `json:"ask"`
+	Timestamp  string `json:"timestamp"`
+	CreateDate string `json:"create_date"`
+}
+
+type Conexao struct {
 	dbConn *sql.DB
 }
 
-func (cotacao Cotacao) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (conn Conexao) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("/cotacao request received")
 	defer log.Println("/cotacao request completed")
-	if cotacao.dbConn != nil {
+	if conn.dbConn != nil {
 		log.Println("Conexão com banco de dados estabelecida")
 	}
 
 	ctx := r.Context()
-	req, err := http.NewRequestWithContext(ctx, "GET", "https://economia.awesomeapi.com.br/json/last/USD-BRL", nil)
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-	defer res.Body.Close()
-
-	data, err := io.ReadAll(res.Body)
+	exchangeRate, err := getExchangeRatesInfo(ctx)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	w.Write([]byte(exchangeRate.Data.Bid))
 }
 
 func maybeCreateSQLLiteDatabase() (*sql.DB, error) {
@@ -74,6 +80,35 @@ func maybeCreateSQLLiteDatabase() (*sql.DB, error) {
 	}
 	log.Println("connected to database exchange_rates.db")
 	return db, nil
+}
+
+func getExchangeRatesInfo(ctx context.Context) (*Cotacao, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", "https://economia.awesomeapi.com.br/json/last/USD-BRL", nil)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	var exchangeRate Cotacao
+	err = json.Unmarshal(data, &exchangeRate)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return &exchangeRate, nil
 }
 
 //func fileExists(filePath string) (bool, error) {
