@@ -16,11 +16,11 @@ Os requisitos para cumprir este desafio são:
 [X] sendo que o timeout máximo para chamar a API de cotação do dólar deverá ser de 200ms e o  
 [X] timeout máximo para conseguir persistir os dados no banco deverá ser de 10ms.  
   
-[ ] O client.go deverá realizar uma requisição HTTP no server.go solicitando a cotação do dólar.  
+[X] O client.go deverá realizar uma requisição HTTP no server.go solicitando a cotação do dólar.  
   
 [X] O client.go precisará receber do server.go apenas o valor atual do câmbio (campo "bid" do JSON).  
 [X] Utilizando o package "context", o client.go terá um timeout máximo de 300ms para receber o resultado do server.go.  
   
 [ ] Os 3 contextos deverão retornar erro nos logs caso o tempo de execução seja insuficiente.  
   
-[ ] O client.go terá que salvar a cotação atual em um arquivo "cotacao.txt" no formato: Dólar: {valor}  
+[X] O client.go terá que salvar a cotação atual em um arquivo "cotacao.txt" no formato: Dólar: {valor}  

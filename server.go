@@ -62,7 +62,7 @@ func (conn Conexao) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = saveExchangeRatesInfo(ctx, conn, exchangeRate)
+	err = saveExchangeRatesInfoInDatabase(ctx, conn, exchangeRate)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -122,7 +122,7 @@ func getExchangeRatesInfo(ctx context.Context) (*Cotacao, error) {
 	return &exchangeRate, nil
 }
 
-func saveExchangeRatesInfo(ctx context.Context, conn Conexao, exchangeRate *Cotacao) error {
+func saveExchangeRatesInfoInDatabase(ctx context.Context, conn Conexao, exchangeRate *Cotacao) error {
 	ctxInternal, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()
 	const insertSTMT string = `INSERT INTO exchange_rates(codein, name, high, low, var_bid, pct_change, bid, ask,
