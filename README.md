@@ -12,9 +12,9 @@ Os requisitos para cumprir este desafio são:
 [X] em seguida deverá retornar no formato JSON o resultado para o cliente.  
   
 [X] Criando o banco de dados  
-[ ] Usando o package "context", o server.go deverá registrar no banco de dados SQLite cada cotação recebida,  
+[X] Usando o package "context", o server.go deverá registrar no banco de dados SQLite cada cotação recebida,  
 [ ] sendo que o timeout máximo para chamar a API de cotação do dólar deverá ser de 200ms e o  
-[ ] timeout máximo para conseguir persistir os dados no banco deverá ser de 10ms.  
+[X] timeout máximo para conseguir persistir os dados no banco deverá ser de 10ms.  
   
 [ ] O client.go deverá realizar uma requisição HTTP no server.go solicitando a cotação do dólar.  
   

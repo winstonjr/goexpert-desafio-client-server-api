@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 )
 
 func main() {
@@ -48,8 +49,9 @@ type Conexao struct {
 func (conn Conexao) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("/cotacao request received")
 	defer log.Println("/cotacao request completed")
-	if conn.dbConn != nil {
-		log.Println("Conexão com banco de dados estabelecida")
+	if conn.dbConn == nil {
+		log.Println("Not possible to connect to database")
+		panic("Not possible to connect to database")
 	}
 
 	ctx := r.Context()
@@ -59,6 +61,8 @@ func (conn Conexao) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	err = saveExchangeRatesInfo(ctx, conn, exchangeRate)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
@@ -109,6 +113,25 @@ func getExchangeRatesInfo(ctx context.Context) (*Cotacao, error) {
 	}
 
 	return &exchangeRate, nil
+}
+
+func saveExchangeRatesInfo(ctx context.Context, conn Conexao, exchangeRate *Cotacao) error {
+	ctxInternal, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
+	defer cancel()
+	const insertSTMT string = `INSERT INTO exchange_rates(codein, name, high, low, var_bid, pct_change, bid, ask,
+                           timestamp, create_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?);`
+	stmt, err := conn.dbConn.Prepare(insertSTMT)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.ExecContext(ctxInternal, exchangeRate.Data.Codein, exchangeRate.Data.Name, exchangeRate.Data.High,
+		exchangeRate.Data.Low, exchangeRate.Data.VarBid, exchangeRate.Data.PctChange, exchangeRate.Data.Bid,
+		exchangeRate.Data.Ask, exchangeRate.Data.Timestamp, exchangeRate.Data.CreateDate)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //func fileExists(filePath string) (bool, error) {
