@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log"
@@ -11,6 +12,10 @@ import (
 	"time"
 )
 
+type CotacaoReturnDTO struct {
+	Bid string `json:"bid"`
+}
+
 func main() {
 	exchangeRate, err := getServerAnswer()
 	if err != nil {
@@ -18,7 +23,7 @@ func main() {
 		return
 	}
 
-	extended_exchange := "Dólar: " + exchangeRate + "\n"
+	extended_exchange := "Dólar: " + exchangeRate.Bid + "\n"
 	err = saveExchangeRatesInfoInFile(extended_exchange)
 	if err != nil {
 		log.Println(err)
@@ -27,34 +32,41 @@ func main() {
 	io.Copy(os.Stdout, strings.NewReader(extended_exchange))
 }
 
-func getServerAnswer() (string, error) {
+func getServerAnswer() (*CotacaoReturnDTO, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", "http://127.0.0.1:8080/cotacao", nil)
 	if err != nil {
 		log.Println(err)
-		return "", err
+		return nil, err
 	}
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Println(err)
-		return "", err
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		log.Println("deu ruim: ", res.StatusCode)
-		return "", errors.New("deu ruim: " + res.Status)
+		log.Println("Não foi possível obter um resultado do servidor: ", res.StatusCode)
+		return nil, errors.New("Não foi possível obter um resultado do servidor: " + res.Status)
 	}
 
-	resBody, err := io.ReadAll(res.Body)
+	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Println(err)
-		return "", err
+		return nil, err
 	}
 
-	return string(resBody), nil
+	var exchangeRate CotacaoReturnDTO
+	err = json.Unmarshal(data, &exchangeRate)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return &exchangeRate, nil
 }
 
 func saveExchangeRatesInfoInFile(exchangeRate string) error {

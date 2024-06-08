@@ -43,6 +43,10 @@ type CotacaoData struct {
 	CreateDate string `json:"create_date"`
 }
 
+type CotacaoDTO struct {
+	Bid string `json:"bid"`
+}
+
 type Conexao struct {
 	dbConn *sql.DB
 }
@@ -70,9 +74,17 @@ func (conn Conexao) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
+	retval := CotacaoDTO{Bid: exchangeRate.Data.Bid}
+	retvalJSON, err := json.Marshal(retval)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(exchangeRate.Data.Bid))
+	w.Write(retvalJSON)
 }
 
 func maybeCreateSQLLiteDatabase() (*sql.DB, error) {
@@ -152,14 +164,3 @@ func existsDB(fileName string) bool {
 	}
 	return true
 }
-
-//func fileExists(filePath string) (bool, error) {
-//	info, err := os.Stat(filePath)
-//	if err == nil {
-//		return !info.IsDir(), nil
-//	}
-//	if errors.Is(err, os.ErrNotExist) {
-//		return false, nil
-//	}
-//	return false, err
-//}
